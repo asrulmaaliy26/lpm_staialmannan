@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@config "./tailwind.config.js";
+
+@layer utilities {
+  .bg-gradient-academic {
+    background: linear-gradient(135deg, #064e3b 0%, #1e3a8a 100%);
+  }
+}

@@ -1,0 +1,9 @@
+
+{
+  "name": "LPM STAIMAN - Landing Page Resmi",
+  "description": "Website resmi Lembaga Penjaminan Mutu (LPM) Sekolah Tinggi Agama Islam Al-Mannan (STAIMAN) dengan desain modern, profesional, dan edukatif.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
