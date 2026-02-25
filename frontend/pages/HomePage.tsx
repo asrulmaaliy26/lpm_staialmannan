@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Download, ArrowRight,
     ShieldCheck, MessageSquare, Monitor, FileText,
-    Award, BookOpen, GraduationCap, Building, Scale, UserCheck, Mail, Phone, MapPin, Zap, Star, Users
+    Award, BookOpen, GraduationCap, Building, Scale, UserCheck, Mail, Phone, MapPin, Zap, Star, Users, Newspaper
 } from 'lucide-react';
-import { SERVICES, TESTIMONIALS, NEWS } from '../constants';
+import { SERVICES, TESTIMONIALS } from '../constants';
+import { fetchLatestNews } from '../services/api';
+import { NewsItem } from '../types';
 
 const SectionHeader = ({ title, subtitle, centered = false, light = false }: { title: string; subtitle?: string; centered?: boolean; light?: boolean }) => (
     <div className={`mb-12 ${centered ? 'text-center' : ''}`}>
@@ -199,30 +201,59 @@ const Services = () => (
     </section>
 );
 
-const NewsSection = () => (
+const NewsSection = ({ news, loading, onNavigate }: { news: NewsItem[]; loading: boolean; onNavigate: (p: string) => void }) => (
     <section className="py-32 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <SectionHeader
-                centered
-                title="Warta Mutu"
-                subtitle="Ikuti perkembangan terbaru dan langkah-langkah kemajuan yang kami ambil."
-            />
+            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                <SectionHeader
+                    title="Warta Mutu"
+                    subtitle="Ikuti perkembangan terbaru dan langkah-langkah kemajuan yang kami ambil."
+                />
+                <button 
+                    onClick={() => onNavigate('berita')}
+                    className="mb-12 bg-slate-50 hover:bg-yellow-500 hover:text-blue-950 text-blue-900 px-8 py-3 rounded-full font-bold transition-all border border-slate-100 flex items-center gap-2"
+                >
+                    Lihat Semua <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
             <div className="grid md:grid-cols-3 gap-12">
-                {NEWS.map((item) => (
-                    <div key={item.id} className="group cursor-pointer">
-                        <div className="relative overflow-hidden rounded-[50px] mb-8 aspect-[4/3] shadow-lg">
-                            <img src={item.image} alt={item.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-10">
-                                <span className="text-white font-black text-lg">Baca Selengkapnya</span>
-                            </div>
+                {loading ? (
+                    Array(3).fill(0).map((_, i) => (
+                        <div key={i} className="animate-pulse">
+                            <div className="bg-slate-200 rounded-[50px] aspect-[4/3] mb-8"></div>
+                            <div className="h-4 bg-slate-200 rounded w-1/4 mb-4"></div>
+                            <div className="h-6 bg-slate-200 rounded w-3/4 mb-4"></div>
+                            <div className="h-4 bg-slate-200 rounded w-full mb-2"></div>
+                            <div className="h-4 bg-slate-200 rounded w-full"></div>
                         </div>
-                        <span className="text-emerald-600 font-black text-sm uppercase tracking-[0.2em] block mb-4">{item.date}</span>
-                        <h3 className="text-2xl font-black text-blue-950 group-hover:text-yellow-600 transition-colors leading-tight mb-4 tracking-tight">
-                            {item.title}
-                        </h3>
-                        <p className="text-slate-500 text-lg leading-relaxed line-clamp-3">{item.excerpt}</p>
+                    ))
+                ) : news.length > 0 ? (
+                    news.map((item) => (
+                        <div key={item.id} className="group cursor-pointer" onClick={() => onNavigate(`news-detail-${item.id}`)}>
+                            <div className="relative overflow-hidden rounded-[50px] mb-8 aspect-[4/3] shadow-lg">
+                                <img src={item.main_image || item.image} alt={item.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-blue-950/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-10">
+                                    <span className="text-white font-black text-lg">Baca Selengkapnya</span>
+                                </div>
+                                {item.jenjang && (
+                                    <div className="absolute top-6 left-6 bg-yellow-500 text-blue-950 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                                        {item.jenjang}
+                                    </div>
+                                )}
+                            </div>
+                            <span className="text-emerald-600 font-black text-sm uppercase tracking-[0.2em] block mb-4">{item.date}</span>
+                            <h3 className="text-2xl font-black text-blue-950 group-hover:text-yellow-600 transition-colors leading-tight mb-4 tracking-tight">
+                                {item.title}
+                            </h3>
+                            <p className="text-slate-500 text-lg leading-relaxed line-clamp-3">{item.excerpt}</p>
+                        </div>
+                    ))
+                ) : (
+                    <div className="col-span-3 text-center py-20 bg-slate-50 rounded-[50px] border-2 border-dashed border-slate-200">
+                        <Newspaper className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                        <p className="text-slate-400 font-bold">Belum ada berita Mutu terbaru.</p>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     </section>
@@ -316,6 +347,23 @@ const ContactSection = ({ settings }: { settings: any }) => (
 );
 
 export default function HomePage({ onNavigate, categories = [], isLoggedIn, settings }: { onNavigate: (p: string) => void; categories?: any[]; isLoggedIn?: boolean; settings?: any }) {
+    const [news, setNews] = useState<NewsItem[]>([]);
+    const [loadingNews, setLoadingNews] = useState(true);
+
+    useEffect(() => {
+        const loadNews = async () => {
+            try {
+                const data = await fetchLatestNews();
+                setNews(data);
+            } catch (error) {
+                console.error('Error fetching news:', error);
+            } finally {
+                setLoadingNews(false);
+            }
+        };
+        loadNews();
+    }, []);
+
     // Helper to check if category exists in API
     const getCatId = (name: string) => categories.find(c => c.nama.toLowerCase().includes(name.toLowerCase()))?.id;
 
@@ -325,7 +373,7 @@ export default function HomePage({ onNavigate, categories = [], isLoggedIn, sett
             <Impact />
             <About />
             <Services />
-            <NewsSection />
+            <NewsSection news={news} loading={loadingNews} onNavigate={onNavigate} />
             <Testimonials />
             <ContactSection settings={settings} />
         </div>

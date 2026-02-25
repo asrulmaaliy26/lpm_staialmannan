@@ -37,6 +37,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, isLoggedIn, onLogout, categ
             label: cat.nama,
             href: `category-${cat.id}`
         })),
+        { label: 'Warta Mutu', href: 'berita' },
     ];
 
     const handleClick = (href: string, e: React.MouseEvent) => {

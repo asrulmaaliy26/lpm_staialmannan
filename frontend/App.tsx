@@ -5,6 +5,8 @@ import Footer from './components/Footer';
 // Pages
 import HomePage from './pages/HomePage';
 import DetailPage from './pages/DetailPage';
+import NewsDetailPage from './pages/NewsDetailPage';
+import NewsPage from './pages/NewsPage';
 import { login, getProfils, getKategoriProfil, getSettings, getMe } from './services/api';
 import { Lock } from 'lucide-react';
 
@@ -145,8 +147,14 @@ export default function App() {
       }
     }
 
+    if (currentPage.startsWith('news-detail-')) {
+      const newsId = currentPage.replace('news-detail-', '');
+      return <NewsDetailPage newsId={newsId} onBack={() => setCurrentPage('home')} onNavigate={setCurrentPage} />;
+    }
+
     switch (currentPage) {
       case 'home': return <HomePage categories={categories} onNavigate={setCurrentPage} isLoggedIn={isLoggedIn} settings={homeSettings} />;
+      case 'berita': return <NewsPage onNavigate={setCurrentPage} />;
       case 'login': return renderProtectedPage(<div className="py-40 text-center font-bold text-2xl text-blue-900 bg-slate-50 min-h-screen">Anda sudah masuk sebagai Admin.</div>);
       case 'sambutan': return <DetailPage title="Sambutan Ketua LPM" type="profile" content={PROFILE_CONTENT.sambutan} image="https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1200" onBack={() => setCurrentPage('home')} isLoggedIn={isLoggedIn} />;
       case 'profil-staiman': return <DetailPage title="Profil STAIMAN" type="profile" content={PROFILE_CONTENT.profilStaiman} image="https://images.unsplash.com/photo-1541339906194-e1610bd11037?q=80&w=1200" onBack={() => setCurrentPage('home')} isLoggedIn={isLoggedIn} />;

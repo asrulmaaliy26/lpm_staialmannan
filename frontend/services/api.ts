@@ -59,6 +59,7 @@ export const downloadProfil = async (id: number, filename: string) => {
     }
 };
 
+// Helper to trigger download
 const triggerDownload = (data: Blob, filename: string) => {
     const finalFilename = filename.toLowerCase().endsWith('.pdf') ? filename : `${filename}.pdf`;
     const url = window.URL.createObjectURL(new Blob([data]));
@@ -71,10 +72,40 @@ const triggerDownload = (data: Blob, filename: string) => {
     window.URL.revokeObjectURL(url);
 };
 
+// Admin API for News
+const adminApi = axios.create({
+    baseURL: import.meta.env.VITE_ADMIN_API_BASE_URL || 'https://admin.staialmannan.ac.id',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    }
+});
+
+// News focus on LPM
+export const fetchLatestNews = async (limit: number = 3) => {
+    const response = await adminApi.get(`/news/limit/${limit}/lpm`);
+    return response.data.data;
+};
+
+export const fetchAllNews = async () => {
+    const response = await adminApi.get('/news');
+    return response.data.data;
+};
+
+export const fetchNewsDetail = async (id: string | number) => {
+    const response = await adminApi.get(`/news/${id}`);
+    return response.data.data;
+};
+
+export const incrementNewsViews = async (id: string | number) => {
+    const response = await adminApi.post(`/news/${id}/views`);
+    return response.data;
+};
+
 export const getProfils = (kategoriId?: number) => {
     const url = kategoriId ? `/kategori-profil/${kategoriId}/profils` : '/profils';
     return api.get(url);
 };
 
-export { api };
+export { api, adminApi };
 export default api;
