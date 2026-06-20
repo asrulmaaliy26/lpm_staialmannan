@@ -17,7 +17,7 @@ jobs:
       - name: 🟢 Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: "8.3"
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, libxml, openssl, pcre, phar, pdo, session, tokenizer, xmlwriter, fileinfo
           coverage: none
 
@@ -58,26 +58,26 @@ jobs:
           port: 22
           script: |
             cd /home/staialmannan/lpm.staialmannan.ac.id
-            
+
             # Ekstrak file
             tar -xzf release.tar.gz
             rm release.tar.gz
-            
+
             # Konfigurasi .env awal jika belum ada
             if [ ! -f .env ]; then
               cp .env.example .env
               php artisan key:generate
             fi
-            
+
             # Hapus file default Webuzo jika ada di public/
             rm -f public/default.html
-            
+
             # Setup Ownership dan Permission Laravel
             chown -R staialmannan:staialmannan /home/staialmannan/lpm.staialmannan.ac.id
             chmod -R 775 storage bootstrap/cache
-            
+
             # Bersihkan cache
             php artisan optimize:clear
-            
+
             # Restart Apache dengan aman
             /usr/local/apps/apache2/bin/apachectl graceful
