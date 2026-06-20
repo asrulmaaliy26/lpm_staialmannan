@@ -1,0 +1,83 @@
+name: 🚀 Auto Deploy - lpm.staialmannan.ac.id
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, libxml, openssl, pcre, phar, pdo, session, tokenizer, xmlwriter, fileinfo
+          coverage: none
+
+      - name: 📦 Install Composer Dependencies
+        run: composer install --optimize-autoloader --no-dev --no-interaction --prefer-dist
+
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 📦 Install NPM Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Assets (Vite)
+        run: npm run build
+
+      - name: 🗜️ Create Archive
+        run: tar -czf release.tar.gz --exclude=.git --exclude=node_modules .
+
+      - name: 📤 Upload Archive ke VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "release.tar.gz"
+          target: "/home/staialmannan/lpm.staialmannan.ac.id"
+
+      - name: ♻️ Extract & Setup di VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/staialmannan/lpm.staialmannan.ac.id
+            
+            # Ekstrak file
+            tar -xzf release.tar.gz
+            rm release.tar.gz
+            
+            # Konfigurasi .env awal jika belum ada
+            if [ ! -f .env ]; then
+              cp .env.example .env
+              php artisan key:generate
+            fi
+            
+            # Hapus file default Webuzo jika ada di public/
+            rm -f public/default.html
+            
+            # Setup Ownership dan Permission Laravel
+            chown -R staialmannan:staialmannan /home/staialmannan/lpm.staialmannan.ac.id
+            chmod -R 775 storage bootstrap/cache
+            
+            # Bersihkan cache
+            php artisan optimize:clear
+            
+            # Restart Apache dengan aman
+            /usr/local/apps/apache2/bin/apachectl graceful
